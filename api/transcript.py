@@ -2,7 +2,9 @@ import os
 import yt_dlp
 import tempfile
 import json
+import os
 
+SECRET_TOKEN = os.environ.get("API_SECRET")
 def get_transcript(video_url):
     with tempfile.TemporaryDirectory() as tmpdir:
         ydl_opts = {
@@ -39,7 +41,15 @@ def handler(request, response):
             response.headers["Content-Type"] = "application/json"
             response.body = json.dumps({"error": "Only POST method is allowed"})
             return response
+        
+        # 🔒 Auth check
+        auth_header = request.headers.get("authorization")
+        if not auth_header or auth_header != f"Bearer {SECRET_TOKEN}":
+            response.status_code = 401
+            response.body = '{"error": "Unauthorized"}'
+            return response
 
+        # ✅ Proceed as normal...
         body = json.loads(request.body)
         video_url = body.get("url")
 
